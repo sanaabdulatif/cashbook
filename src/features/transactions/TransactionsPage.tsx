@@ -190,8 +190,8 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
         ) : (
           <div className="py-16 text-center bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-ambient">
             <BookOpen className="w-12 h-12 text-secondary/40 mx-auto mb-3" />
-            <p className="text-base font-bold text-on-surface">No CashBooks created yet</p>
-            <p className="text-xs text-secondary mt-1 px-4">Create your first sub-ledger under {activeBook?.name} to start managing cash inflow & outflow.</p>
+            <p className="text-base font-bold text-on-surface">No cashbooks found</p>
+            <p className="text-sm text-secondary mt-1 px-4">Click '+ Add Book' to create your first book.</p>
             {userRole !== 'viewer' && (
               <button
                 onClick={() => setIsAddingBook(true)}
@@ -430,10 +430,16 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       {tx.attachment_name ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-primary font-semibold bg-primary-fixed/30 px-2.5 py-1 rounded-lg border border-primary/20">
+                        <a
+                          href={tx.attachment_url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary font-semibold bg-primary-fixed/30 px-2.5 py-1 rounded-lg border border-primary/20 hover:bg-primary-fixed/50 hover:text-primary transition-all cursor-pointer"
+                          title="View receipt"
+                        >
                           <FileText className="w-3.5 h-3.5" />
                           <span className="truncate max-w-[100px]">{tx.attachment_name}</span>
-                        </span>
+                        </a>
                       ) : (
                         <span className="text-xs text-secondary/40 font-mono">-</span>
                       )}

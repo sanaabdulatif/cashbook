@@ -10,14 +10,13 @@ import {
   Settings as SettingsIcon, 
   Plus, 
   LogOut, 
-  ShieldAlert,
   ChevronDown
 } from 'lucide-react';
 
 
 export function Sidebar() {
-  const { profile, signOut } = useAuth();
-  const { activeBookId, setActiveBookId, setRoleOverride } = useStore();
+  const { profile, signOut, user } = useAuth();
+  const { activeBookId, setActiveBookId } = useStore();
   const { data: books = [] } = useBooks();
   const activeBook = useActiveBook();
   const userRole = useUserRole(activeBookId || undefined);
@@ -26,22 +25,38 @@ export function Sidebar() {
   const [showBookDropdown, setShowBookDropdown] = React.useState(false);
   const [isAddingBusiness, setIsAddingBusiness] = React.useState(false);
   const [newBusinessName, setNewBusinessName] = React.useState('');
+  const [addError, setAddError] = React.useState<string | null>(null);
 
   const handleAddBusinessSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBusinessName.trim()) return;
+    if (!user) {
+      setAddError('Not authenticated');
+      return;
+    }
 
+    setAddError(null);
     addBookMutation.mutate({
       name: newBusinessName.trim(),
       currency: '₹',
       opening_balance: 0,
+      user_id: user.id,
     }, {
       onSuccess: () => {
         setNewBusinessName('');
         setIsAddingBusiness(false);
         setShowBookDropdown(false);
+      },
+      onError: (err: any) => {
+        setAddError(err.message || 'Failed to add business');
       }
     });
+  };
+
+  const handleCloseModal = () => {
+    setIsAddingBusiness(false);
+    setNewBusinessName('');
+    setAddError(null);
   };
 
   const navItems = [
@@ -127,33 +142,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* PRD Role Switcher (For Acceptance Testing Demo) */}
-      <div className="mb-4 p-3 bg-surface-container rounded-xl border border-outline-variant/60">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-secondary mb-2">
-          <ShieldAlert className="w-3.5 h-3.5 text-primary" />
-          <span>PRD Acceptance Role</span>
-        </div>
-        <div className="grid grid-cols-3 gap-1 bg-surface-container-lowest p-1 rounded-lg border border-outline-variant text-[11px] font-medium text-center">
-          <button
-            onClick={() => setRoleOverride('owner')}
-            className={`py-1 rounded ${userRole === 'owner' ? 'bg-primary text-on-primary font-bold' : 'text-secondary hover:text-on-surface'}`}
-          >
-            Owner
-          </button>
-          <button
-            onClick={() => setRoleOverride('editor')}
-            className={`py-1 rounded ${userRole === 'editor' ? 'bg-primary text-on-primary font-bold' : 'text-secondary hover:text-on-surface'}`}
-          >
-            Editor
-          </button>
-          <button
-            onClick={() => setRoleOverride('viewer')}
-            className={`py-1 rounded ${userRole === 'viewer' ? 'bg-primary text-on-primary font-bold' : 'text-secondary hover:text-on-surface'}`}
-          >
-            Viewer
-          </button>
-        </div>
-      </div>
 
       {/* User Profile Footer */}
       <div className="border-t border-outline-variant pt-4 flex items-center justify-between">
@@ -178,6 +166,13 @@ export function Sidebar() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-sm shadow-2xl p-6 flex flex-col gap-4">
             <h3 className="font-bold text-lg text-on-surface">Add New Business</h3>
+            
+            {addError && (
+              <div className="p-3 rounded-lg bg-cashout/10 border border-cashout/20 text-cashout text-xs font-semibold text-center" role="alert">
+                {addError}
+              </div>
+            )}
+
             <form onSubmit={handleAddBusinessSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-semibold text-on-surface" htmlFor="bizName">
@@ -189,27 +184,27 @@ export function Sidebar() {
                   placeholder="e.g. Acme Corp"
                   value={newBusinessName}
                   onChange={(e) => setNewBusinessName(e.target.value)}
+                  disabled={addBookMutation.isPending}
                   required
                   autoFocus
-                  className="w-full h-[40px] px-3 rounded-lg border border-outline-variant focus:border-primary focus:outline-none text-sm text-on-surface bg-surface-container-lowest"
+                  className="w-full h-[40px] px-3 rounded-lg border border-outline-variant focus:border-primary focus:outline-none text-sm text-on-surface bg-surface-container-lowest disabled:opacity-50"
                 />
               </div>
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsAddingBusiness(false);
-                    setNewBusinessName('');
-                  }}
-                  className="px-4 py-2 text-sm font-semibold rounded-lg hover:bg-surface-container transition-colors text-secondary"
+                  onClick={handleCloseModal}
+                  disabled={addBookMutation.isPending}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg hover:bg-surface-container transition-colors text-secondary disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-bold rounded-lg bg-primary text-on-primary hover:bg-primary-dark transition-colors"
+                  disabled={addBookMutation.isPending}
+                  className="px-4 py-2 text-sm font-bold rounded-lg bg-primary text-on-primary hover:bg-primary-dark transition-colors disabled:opacity-75"
                 >
-                  Add Business
+                  {addBookMutation.isPending ? 'Adding...' : 'Add Business'}
                 </button>
               </div>
             </form>
@@ -221,7 +216,7 @@ export function Sidebar() {
 }
 
 export function Navbar() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { setActiveBookId } = useStore();
   const { data: books = [] } = useBooks();
   const activeBook = useActiveBook();
@@ -229,22 +224,38 @@ export function Navbar() {
   const [showDropdown, setShowDropdown] = React.useState(false);
   const [isAddingBusiness, setIsAddingBusiness] = React.useState(false);
   const [newBusinessName, setNewBusinessName] = React.useState('');
+  const [addError, setAddError] = React.useState<string | null>(null);
 
   const handleAddBusinessSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBusinessName.trim()) return;
+    if (!user) {
+      setAddError('Not authenticated');
+      return;
+    }
 
+    setAddError(null);
     addBookMutation.mutate({
       name: newBusinessName.trim(),
       currency: '₹',
       opening_balance: 0,
+      user_id: user.id
     }, {
       onSuccess: () => {
         setNewBusinessName('');
         setIsAddingBusiness(false);
         setShowDropdown(false);
+      },
+      onError: (err: any) => {
+        setAddError(err.message || 'Failed to add business');
       }
     });
+  };
+
+  const handleCloseModal = () => {
+    setIsAddingBusiness(false);
+    setNewBusinessName('');
+    setAddError(null);
   };
 
   return (
@@ -306,6 +317,13 @@ export function Navbar() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-sm shadow-2xl p-6 flex flex-col gap-4">
             <h3 className="font-bold text-lg text-on-surface">Add New Business</h3>
+            
+            {addError && (
+              <div className="p-3 rounded-lg bg-cashout/10 border border-cashout/20 text-cashout text-xs font-semibold text-center" role="alert">
+                {addError}
+              </div>
+            )}
+
             <form onSubmit={handleAddBusinessSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1 text-left">
                 <label className="text-xs font-semibold text-on-surface" htmlFor="bizNameMobile">
@@ -317,27 +335,27 @@ export function Navbar() {
                   placeholder="e.g. Acme Corp"
                   value={newBusinessName}
                   onChange={(e) => setNewBusinessName(e.target.value)}
+                  disabled={addBookMutation.isPending}
                   required
                   autoFocus
-                  className="w-full h-[40px] px-3 rounded-lg border border-outline-variant focus:border-primary focus:outline-none text-sm text-on-surface bg-surface-container-lowest"
+                  className="w-full h-[40px] px-3 rounded-lg border border-outline-variant focus:border-primary focus:outline-none text-sm text-on-surface bg-surface-container-lowest disabled:opacity-50"
                 />
               </div>
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsAddingBusiness(false);
-                    setNewBusinessName('');
-                  }}
-                  className="px-4 py-2 text-sm font-semibold rounded-lg hover:bg-surface-container transition-colors text-secondary"
+                  onClick={handleCloseModal}
+                  disabled={addBookMutation.isPending}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg hover:bg-surface-container transition-colors text-secondary disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-bold rounded-lg bg-primary text-on-primary hover:bg-primary-dark transition-colors"
+                  disabled={addBookMutation.isPending}
+                  className="px-4 py-2 text-sm font-bold rounded-lg bg-primary text-on-primary hover:bg-primary-dark transition-colors disabled:opacity-75"
                 >
-                  Add Business
+                  {addBookMutation.isPending ? 'Adding...' : 'Add Business'}
                 </button>
               </div>
             </form>

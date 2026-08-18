@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { config } from './config';
+import { useStore } from './useStore';
 import type { Profile } from '../types';
 
 interface AuthContextType {
@@ -11,7 +13,7 @@ interface AuthContextType {
   signInWithPassword: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  demoLogin: (email: string, name: string) => void;
+  demoLogin: (email: string) => Promise<{ error: any }>;
   resetPasswordForEmail: (email: string) => Promise<{ error: any }>;
 }
 
@@ -88,18 +90,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setProfile(null);
     setSession(null);
+    const { setActiveBookId, setRoleOverride } = useStore.getState();
+    setActiveBookId(null);
+    setRoleOverride(null);
   };
 
-  const demoLogin = (email: string, name: string) => {
-    const mockUser = { id: `user-${email.split('@')[0]}`, email } as User;
-    setUser(mockUser);
-    setProfile({
-      id: mockUser.id,
+  const demoLogin = async (email: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      full_name: name,
-      created_at: new Date().toISOString(),
+      password: config.demoPassword,
     });
-    setLoading(false);
+    return { error };
   };
 
   const resetPasswordForEmail = async (email: string) => {

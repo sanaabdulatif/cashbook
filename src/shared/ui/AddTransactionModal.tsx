@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../lib/useStore';
 import { useActiveBook, useActiveCashBook, useCategories, useAddTransaction, useUserRole } from '../lib/hooks/useQueries';
 import { X, Upload, FileText } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
   const [note, setNote] = useState<string>('');
   const [attachmentName, setAttachmentName] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -34,7 +37,7 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
     (c) => c.type === 'both' || c.type === type
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -59,34 +62,64 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
       return;
     }
 
-    addTransactionMutation.mutate({
-      book_id: activeCashBook.id,
-      type,
-      amount: numAmount,
-      description,
-      date,
-      category_id: categoryId || availableCategories[0]?.id,
-      payment_method: paymentMethod,
-      note,
-      attachment_name: attachmentName || undefined,
-    }, {
-      onSuccess: () => {
-        setAmount('');
-        setDescription('');
-        setNote('');
-        setAttachmentName('');
-        onClose();
-      },
-      onError: (err: any) => {
-        setError(err.message || 'Failed to add transaction.');
+    setUploading(true);
+    let uploadedUrl: string | undefined = undefined;
+
+    try {
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${activeCashBook.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, selectedFile);
+          
+        if (uploadError) throw uploadError;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('receipts')
+          .getPublicUrl(fileName);
+          
+        uploadedUrl = publicUrl;
       }
-    });
+
+      addTransactionMutation.mutate({
+        book_id: activeCashBook.id,
+        type,
+        amount: numAmount,
+        description,
+        date,
+        category_id: categoryId || availableCategories[0]?.id,
+        payment_method: paymentMethod,
+        note,
+        attachment_name: attachmentName || undefined,
+        attachment_url: uploadedUrl,
+      }, {
+        onSuccess: () => {
+          setAmount('');
+          setDescription('');
+          setNote('');
+          setAttachmentName('');
+          setSelectedFile(null);
+          onClose();
+        },
+        onError: (err: any) => {
+          setError(err.message || 'Failed to add transaction.');
+        }
+      });
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload receipt file.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAttachmentName(file.name);
+      setSelectedFile(file);
     }
   };
 
@@ -253,15 +286,17 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-outline-variant text-secondary text-sm font-medium hover:bg-surface-container transition-colors"
+              disabled={addTransactionMutation.isPending || uploading}
+              className="px-4 py-2.5 rounded-xl border border-outline-variant text-secondary text-sm font-medium hover:bg-surface-container transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-dark transition-all shadow-md"
+              disabled={addTransactionMutation.isPending || uploading}
+              className="px-6 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-dark transition-all shadow-md disabled:opacity-75"
             >
-              Save Transaction
+              {uploading ? 'Uploading Receipt...' : addTransactionMutation.isPending ? 'Saving...' : 'Save Transaction'}
             </button>
           </div>
         </form>

@@ -21,7 +21,7 @@ export interface Book {
   name: string;
   currency: string;
   opening_balance: number;
-  owner_id: string;
+  user_id: string;
   created_at: string;
   updated_at: string;
 }

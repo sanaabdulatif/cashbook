@@ -16,7 +16,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
-  const { signInWithPassword, demoLogin } = useAuth();
+  const { signInWithPassword } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
   
   const {
@@ -39,6 +39,8 @@ export function LoginPage() {
       setAuthError(error.message || 'Invalid email or password');
     }
   };
+
+
 
   const handleGoogleSignIn = async () => {
     setAuthError(null);
@@ -85,10 +87,11 @@ export function LoginPage() {
               id="email"
               type="email"
               placeholder="you@example.com"
+              disabled={isSubmitting}
               {...register('email')}
               className={`w-full h-[44px] px-3.5 rounded-[12px] border ${
                 errors.email ? 'border-cashout focus:border-cashout focus:ring-cashout/10' : 'border-outline-variant focus:border-primary focus:ring-primary/10'
-              } focus:ring focus:outline-none text-sm text-on-surface transition-all bg-surface-container-lowest`}
+              } focus:ring focus:outline-none text-sm text-on-surface transition-all bg-surface-container-lowest disabled:opacity-50`}
             />
             {errors.email && (
               <span className="text-xs font-medium text-cashout mt-1" role="alert">
@@ -105,10 +108,11 @@ export function LoginPage() {
               id="password"
               type="password"
               placeholder="••••••••"
+              disabled={isSubmitting}
               {...register('password')}
               className={`w-full h-[44px] px-3.5 rounded-[12px] border ${
                 errors.password ? 'border-cashout focus:border-cashout focus:ring-cashout/10' : 'border-outline-variant focus:border-primary focus:ring-primary/10'
-              } focus:ring focus:outline-none text-sm text-on-surface transition-all bg-surface-container-lowest`}
+              } focus:ring focus:outline-none text-sm text-on-surface transition-all bg-surface-container-lowest disabled:opacity-50`}
             />
             {errors.password && (
               <span className="text-xs font-medium text-cashout mt-1" role="alert">
@@ -121,6 +125,7 @@ export function LoginPage() {
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
+                disabled={isSubmitting}
                 {...register('rememberMe')}
                 className="w-4 h-4 rounded text-primary border-outline-variant focus:ring-primary"
               />
@@ -163,7 +168,8 @@ export function LoginPage() {
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full h-[44px] bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold text-sm rounded-xl hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2 shadow-sm"
+          disabled={isSubmitting}
+          className="w-full h-[44px] bg-surface-container-lowest border border-outline-variant text-on-surface font-semibold text-sm rounded-xl hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -186,28 +192,7 @@ export function LoginPage() {
           <span>Continue with Google</span>
         </button>
 
-        {/* PRD Quick Demo Accounts */}
-        <div className="pt-3 border-t border-outline-variant/60 flex flex-col gap-2">
-          <span className="text-[11px] font-bold text-secondary text-center uppercase tracking-wider">
-            Quick PRD Demo Sign-in:
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => demoLogin('owner@example.com', 'Owner User')}
-              className="py-1.5 px-3 bg-surface hover:bg-surface-container text-xs font-bold text-primary rounded-lg border border-outline-variant transition-colors"
-            >
-              Owner Demo
-            </button>
-            <button
-              type="button"
-              onClick={() => demoLogin('editor@example.com', 'Editor User')}
-              className="py-1.5 px-3 bg-surface hover:bg-surface-container text-xs font-bold text-cashin rounded-lg border border-outline-variant transition-colors"
-            >
-              Editor Demo
-            </button>
-          </div>
-        </div>
+
 
         {/* Footer */}
         <p className="text-center text-xs text-secondary">

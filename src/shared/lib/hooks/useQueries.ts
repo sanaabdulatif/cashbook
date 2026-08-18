@@ -18,14 +18,24 @@ export function useBooks() {
 export function useActiveBook() {
   const { activeBookId, setActiveBookId } = useStore();
   const { data: books = [] } = useBooks();
+  const { user } = useAuth();
 
   const activeBook = books.find((b) => b.id === activeBookId) || books[0] || null;
 
   React.useEffect(() => {
-    if (!activeBookId && activeBook) {
-      setActiveBookId(activeBook.id);
+    if (books.length > 0) {
+      if (user?.email === 'editor@example.com') {
+        const sharedBook = books.find(b => b.user_id !== user.id);
+        if (sharedBook && activeBookId !== sharedBook.id) {
+          setActiveBookId(sharedBook.id);
+          return;
+        }
+      }
+      if (!activeBookId && activeBook) {
+        setActiveBookId(activeBook.id);
+      }
     }
-  }, [activeBookId, activeBook, setActiveBookId]);
+  }, [activeBookId, activeBook, books, user, setActiveBookId]);
 
   return activeBook;
 }
@@ -249,7 +259,7 @@ export function useUserRole(businessId: string | undefined) {
   if (!user || !businessId) return 'viewer';
 
   const book = books.find((b) => b.id === businessId);
-  if (book && book.owner_id === user.id) {
+  if (book && book.user_id === user.id) {
     return 'owner';
   }
 

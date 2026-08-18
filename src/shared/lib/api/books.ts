@@ -3,24 +3,21 @@ import type { Book, CashBook, BookMember } from '../../types';
 
 export async function fetchBooks(): Promise<Book[]> {
   const { data, error } = await supabase
-    .from('books')
+    .from('businesses')
     .select('*')
     .order('created_at', { ascending: true });
   if (error) throw error;
   return data || [];
 }
 
-export async function createBook(book: Omit<Book, 'id' | 'owner_id' | 'created_at' | 'updated_at'>): Promise<Book> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
+export async function createBook(book: { name: string; currency: string; opening_balance: number; user_id: string }): Promise<Book> {
   const { data, error } = await supabase
-    .from('books')
+    .from('businesses')
     .insert([{
       name: book.name,
       currency: book.currency,
       opening_balance: book.opening_balance,
-      owner_id: user.id
+      user_id: book.user_id
     }])
     .select()
     .single();

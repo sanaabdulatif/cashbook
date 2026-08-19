@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './shared/lib/AuthContext';
-import { Sidebar, Navbar, BottomNavigation } from './shared/ui/Sidebar';
-import { AddTransactionModal } from './shared/ui/AddTransactionModal';
+import { Sidebar, BottomNavigation } from './shared/ui/Sidebar';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { TransactionsPage } from './features/transactions/TransactionsPage';
 import { ReportsPage } from './features/reports/ReportsPage';
@@ -16,7 +14,6 @@ import { ResetPasswordPage } from './features/auth/ResetPasswordPage';
 function MainApp() {
 
   const { user } = useAuth();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   if (!user) {
     return (
@@ -33,12 +30,11 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-surface">
       <Sidebar />
-      <Navbar />
 
-      <main className="pt-[80px] md:pt-8 md:ml-[240px] px-4 md:px-8 pb-[88px] md:pb-12 max-w-[1440px]">
+      <main className="pt-6 md:pt-8 md:ml-[240px] px-4 md:px-8 pb-[88px] md:pb-12 max-w-[1440px]">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/transactions" element={<TransactionsPage onOpenAddModal={() => setIsAddModalOpen(true)} />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -47,11 +43,6 @@ function MainApp() {
       </main>
 
       <BottomNavigation />
-
-      <AddTransactionModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-      />
     </div>
   );
 }

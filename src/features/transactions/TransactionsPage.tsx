@@ -1,7 +1,19 @@
 import { useState } from 'react';
 import { useStore } from '../../shared/lib/useStore';
-import { useActiveBook, useCashBooks, useActiveCashBook, useCategories, useTransactions, useUserRole, useAddCashBook, useDeleteTransaction } from '../../shared/lib/hooks/useQueries';
+import { 
+  useActiveBook, 
+  useCashBooks, 
+  useActiveCashBook, 
+  useCategories, 
+  useTransactions, 
+  useUserRole, 
+  useAddCashBook, 
+  useDeleteTransaction,
+  useBookMembers
+} from '../../shared/lib/hooks/useQueries';
 import { formatCurrency, formatDate } from '../../shared/utils';
+import { useAuth } from '../../shared/lib/AuthContext';
+import { AddTransactionModal } from '../../shared/ui/AddTransactionModal';
 import { 
   Search, 
   Filter, 
@@ -12,14 +24,14 @@ import {
   ArrowDownRight,
   ArrowLeft,
   BookOpen,
-  ChevronRight
+  ChevronRight,
+  Calendar,
+  ChevronLeft,
+  Pencil
 } from 'lucide-react';
+import type { Transaction } from '../../shared/types';
 
-interface TransactionsPageProps {
-  onOpenAddModal: () => void;
-}
-
-export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
+export function TransactionsPage() {
   const { 
     activeBookId,
     searchQuery,
@@ -29,7 +41,6 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
     categoryFilter,
     setCategoryFilter,
     paymentMethodFilter,
-    setPaymentMethodFilter,
     setActiveCashBookId
   } = useStore();
 
@@ -38,6 +49,8 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
   const activeCashBook = useActiveCashBook(activeBookId || undefined);
   const { data: categories = [] } = useCategories(activeBookId || undefined);
   const { data: transactions = [] } = useTransactions(activeBookId || undefined);
+  const { data: members = [] } = useBookMembers(activeBookId || undefined);
+  const { user } = useAuth();
   const userRole = useUserRole(activeBookId || undefined);
 
   const addCashBookMutation = useAddCashBook(activeBookId || undefined);
@@ -45,6 +58,127 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
 
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
+  const [showSearchInput, setShowSearchInput] = useState(false);
+  const [showCalendarMenu, setShowCalendarMenu] = useState(false);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Custom Calendar picker state
+  const [tempStart, setTempStart] = useState<string | null>(null);
+  const [tempEnd, setTempEnd] = useState<string | null>(null);
+  const [viewYear, setViewYear] = useState(new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(new Date().getMonth());
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+
+  const MONTH_NAMES = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const WEEKDAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+  const getDaysInMonth = (y: number, m: number) => {
+    return new Date(y, m + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (y: number, m: number) => {
+    return new Date(y, m, 1).getDay();
+  };
+
+  const generateDays = () => {
+    const daysInMonth = getDaysInMonth(viewYear, viewMonth);
+    const firstDayIndex = getFirstDayOfMonth(viewYear, viewMonth);
+    const daysArray = [];
+
+    const prevMonth = viewMonth === 0 ? 11 : viewMonth - 1;
+    const prevYear = viewMonth === 0 ? viewYear - 1 : viewYear;
+    const prevMonthDaysCount = getDaysInMonth(prevYear, prevMonth);
+
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      daysArray.push({
+        day: prevMonthDaysCount - i,
+        isCurrentMonth: false,
+        month: prevMonth,
+        year: prevYear
+      });
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      daysArray.push({
+        day: i,
+        isCurrentMonth: true,
+        month: viewMonth,
+        year: viewYear
+      });
+    }
+
+    const nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
+    const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+    const remaining = 42 - daysArray.length;
+    for (let i = 1; i <= remaining; i++) {
+      daysArray.push({
+        day: i,
+        isCurrentMonth: false,
+        month: nextMonth,
+        year: nextYear
+      });
+    }
+
+    return daysArray;
+  };
+
+  const formatDateString = (y: number, m: number, d: number) => {
+    const mm = String(m + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${y}-${mm}-${dd}`;
+  };
+
+  const handleDateClick = (y: number, m: number, d: number) => {
+    const dateStr = formatDateString(y, m, d);
+    if (!tempStart || (tempStart && tempEnd)) {
+      setTempStart(dateStr);
+      setTempEnd(null);
+    } else {
+      if (dateStr < tempStart) {
+        setTempStart(dateStr);
+        setTempEnd(null);
+      } else {
+        setTempEnd(dateStr);
+        setDateStart(tempStart);
+        setDateEnd(dateStr);
+        setShowCalendarMenu(false);
+      }
+    }
+  };
+
+  const isDateInRange = (dateStr: string) => {
+    if (tempStart && tempEnd) {
+      return dateStr >= tempStart && dateStr <= tempEnd;
+    }
+    if (tempStart && hoveredDate) {
+      return dateStr >= tempStart && dateStr <= hoveredDate;
+    }
+    return false;
+  };
+
+  const handlePrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(viewYear - 1);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(viewYear + 1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
 
   // Sub-book creation form state
   const [isAddingBook, setIsAddingBook] = useState(false);
@@ -52,7 +186,15 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
   const [newBookOpeningBalance, setNewBookOpeningBalance] = useState('');
 
   // Get only CashBooks belonging to the active business
-  const currentCashBooks = cashBooks.filter(cb => cb.business_id === activeBook?.id);
+  let currentCashBooks = cashBooks.filter(cb => cb.business_id === activeBook?.id);
+
+  // Filter based on user membership restriction
+  const currentMember = members.find((m) => m.user_id === user?.id);
+  const isBusinessOwner = activeBook && user && activeBook.user_id === user.id;
+
+  if (!isBusinessOwner && currentMember && currentMember.access_for && currentMember.access_for !== 'All CashBooks') {
+    currentCashBooks = currentCashBooks.filter(cb => cb.name === currentMember.access_for);
+  }
 
   // Helper to calculate total balance for a cashbook
   const getCashBookBalance = (cbId: string, opening: number) => {
@@ -141,17 +283,18 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
           {userRole !== 'viewer' && (
             <button
               onClick={() => setIsAddingBook(true)}
-              className="self-start md:self-auto bg-primary text-on-primary font-bold px-5 py-2.5 rounded-xl hover:bg-primary-dark transition-all flex items-center gap-2 shadow-ambient text-sm"
+              className="fixed bottom-20 right-4 md:static w-14 h-14 md:w-auto md:h-auto rounded-full md:rounded-xl bg-primary text-on-primary font-bold hover:bg-primary-dark transition-all flex items-center justify-center gap-2 shadow-lg md:shadow-ambient text-sm cursor-pointer z-40"
+              title="Add CashBook"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Book</span>
+              <Plus className="w-6 h-6 md:w-4 md:h-4" />
+              <span className="hidden md:inline">Add Book</span>
             </button>
           )}
         </div>
 
         {/* CashBooks Grid */}
         {currentCashBooks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-3 md:gap-6">
             {currentCashBooks.map((cb) => {
               const currentBalance = getCashBookBalance(cb.id, cb.opening_balance);
               const txCount = getCashBookTxCount(cb.id);
@@ -159,25 +302,36 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
                 <div
                   key={cb.id}
                   onClick={() => setActiveCashBookId(cb.id)}
-                  className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-ambient hover:shadow-lg hover:border-primary transition-all cursor-pointer flex flex-col gap-4 group text-left"
+                  className="bg-surface-container-lowest border border-outline-variant p-4 md:p-6 rounded-xl md:rounded-2xl shadow-ambient hover:shadow-lg hover:border-primary transition-all cursor-pointer flex flex-row items-center justify-between gap-3 group text-left min-w-0 md:flex-col md:items-start md:gap-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all">
-                      <BookOpen className="w-5 h-5" />
+                  {/* Icon and Book Info (Left side on mobile, top on desktop) */}
+                  <div className="flex items-center gap-3 min-w-0 md:w-full md:flex-row md:justify-between md:items-center">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-primary-fixed flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all shrink-0">
+                      <BookOpen className="w-4.5 h-4.5 md:w-5 md:h-5" />
                     </div>
-                    <ChevronRight className="w-5 h-5 text-secondary group-hover:text-primary transition-colors translate-x-0 group-hover:translate-x-1" />
+                    <div className="min-w-0 md:hidden">
+                      <h3 className="font-bold text-sm text-on-surface truncate">{cb.name}</h3>
+                      <p className="text-[10px] text-secondary mt-0.5 font-medium">{txCount} entries</p>
+                    </div>
+                    <ChevronRight className="hidden md:block w-5 h-5 text-secondary group-hover:text-primary transition-colors translate-x-0 group-hover:translate-x-1 shrink-0" />
                   </div>
-                  <div>
+
+                  {/* Desktop Only Book Info block */}
+                  <div className="hidden md:block">
                     <h3 className="font-bold text-base text-on-surface truncate">{cb.name}</h3>
-                    <p className="text-[11px] text-secondary mt-0.5 font-medium">{txCount} transactions ledger</p>
+                    <p className="text-[11px] text-secondary mt-0.5 font-medium">{txCount} entries</p>
                   </div>
-                  <div className="pt-2 border-t border-outline-variant/60">
-                    <p className="text-xs text-secondary font-medium uppercase tracking-wider">Current Balance</p>
-                    <p className="text-xl font-bold font-currency text-on-surface mt-0.5">
+
+                  {/* Balance block (Right side on mobile, middle on desktop) */}
+                  <div className="text-right md:text-left pt-0 md:pt-2 md:border-t md:border-outline-variant/40 md:w-full min-w-0 shrink-0">
+                    <p className="text-[9px] md:text-xs text-secondary font-medium uppercase tracking-wider truncate">Balance</p>
+                    <p className="text-sm sm:text-base md:text-xl font-bold font-currency text-on-surface mt-0.5 truncate">
                       {formatCurrency(currentBalance, activeBook?.currency)}
                     </p>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-secondary font-medium pt-1">
+
+                  {/* Desktop Only Opening Balance footer */}
+                  <div className="hidden md:flex justify-between items-center text-xs text-secondary font-medium pt-1 w-full border-t border-outline-variant/30 md:border-t-0">
                     <span>Opening Balance:</span>
                     <span className="font-currency font-semibold text-on-surface">
                       {formatCurrency(cb.opening_balance, activeBook?.currency)}
@@ -195,7 +349,7 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
             {userRole !== 'viewer' && (
               <button
                 onClick={() => setIsAddingBook(true)}
-                className="mt-4 bg-primary text-on-primary font-bold px-4 py-2 rounded-xl text-xs hover:bg-primary-dark transition-colors inline-flex items-center gap-1.5"
+                className="mt-4 bg-primary text-on-primary font-bold px-4 py-2 rounded-xl text-xs hover:bg-primary-dark transition-colors inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Create Book</span>
@@ -286,98 +440,229 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
           </div>
           {userRole !== 'viewer' && (
             <button
-              onClick={onOpenAddModal}
-              className="self-start md:self-auto bg-primary text-on-primary font-bold px-5 py-2.5 rounded-xl hover:bg-primary-dark transition-all flex items-center gap-2 shadow-ambient text-sm"
+              onClick={() => {
+                setSelectedTxForEdit(null);
+                setIsAddModalOpen(true);
+              }}
+              className="fixed bottom-20 right-4 md:static w-14 h-14 md:w-auto md:h-auto rounded-full md:rounded-xl bg-primary text-on-primary font-bold hover:bg-primary-dark transition-all flex items-center justify-center gap-2 shadow-lg md:shadow-ambient text-sm cursor-pointer z-40"
+              title="Add Entry"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Entry</span>
+              <Plus className="w-6 h-6 md:w-4 md:h-4" />
+              <span className="hidden md:inline">Add Entry</span>
             </button>
           )}
         </div>
       </div>
 
       {/* PRD Search & Filtering Toolbar */}
-      <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded-2xl shadow-ambient flex flex-col gap-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          {/* Search bar */}
-          <div className="relative md:col-span-2">
-            <Search className="w-4 h-4 text-secondary absolute left-3.5 top-3" />
-            <input
-              type="text"
-              placeholder="Search by description, note, or amount..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low"
-            />
-          </div>
-
-          {/* Type Filter */}
-          <div>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-medium text-on-surface bg-surface-container-low focus:outline-none focus:border-primary"
-            >
-              <option value="all">All Entry Types</option>
-              <option value="cash_in">Cash In Only (+)</option>
-              <option value="cash_out">Cash Out Only (-)</option>
-            </select>
-          </div>
-
-          {/* Category Filter */}
-          <div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-medium text-on-surface bg-surface-container-low focus:outline-none focus:border-primary"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Date & Payment Method Filters */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-outline-variant/60">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-secondary">
-              <Filter className="w-3.5 h-3.5" />
-              <span>Date Range:</span>
+      <div className="flex items-center justify-end bg-surface-container-lowest border border-outline-variant p-2.5 rounded-2xl shadow-ambient">
+        {/* Right Side: Horizontal Icons list */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Search toggle */}
+          <div className="relative flex items-center">
+            {showSearchInput && (
               <input
-                type="date"
-                value={dateStart}
-                onChange={(e) => setDateStart(e.target.value)}
-                className="px-2 py-1 border border-outline-variant rounded-lg text-xs"
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-24 sm:w-48 px-3 py-1.5 mr-1.5 border border-outline-variant rounded-xl text-xs focus:outline-none focus:border-primary bg-surface-container-low animate-fadeIn"
+                autoFocus
               />
-              <span>to</span>
-              <input
-                type="date"
-                value={dateEnd}
-                onChange={(e) => setDateEnd(e.target.value)}
-                className="px-2 py-1 border border-outline-variant rounded-lg text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-semibold text-secondary">
-              <span>Payment:</span>
-              <select
-                value={paymentMethodFilter}
-                onChange={(e) => setPaymentMethodFilter(e.target.value)}
-                className="px-2 py-1 border border-outline-variant rounded-lg text-xs"
-              >
-                <option value="all">All Methods</option>
-                <option value="Cash">Cash</option>
-                <option value="Bank">Bank</option>
-                <option value="Card">Card</option>
-                <option value="UPI">UPI</option>
-              </select>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowSearchInput(!showSearchInput)}
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all flex items-center justify-center cursor-pointer ${
+                showSearchInput || searchQuery
+                  ? 'bg-primary text-on-primary border-primary shadow-sm'
+                  : 'bg-surface-container-lowest text-primary border-outline-variant hover:bg-surface-container/50'
+              }`}
+              title="Search Ledger"
+            >
+              <Search className="w-4 h-4" />
+            </button>
           </div>
 
-          <div className="text-xs text-secondary font-medium">
-            Found <span className="font-bold text-on-surface">{filteredTransactions.length}</span> matching records
+          {/* Calendar Picker dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCalendarMenu(!showCalendarMenu);
+                setShowFilterMenu(false);
+                setTempStart(dateStart || null);
+                setTempEnd(dateEnd || null);
+                const initialDate = dateStart ? new Date(dateStart) : new Date();
+                setViewYear(initialDate.getFullYear());
+                setViewMonth(initialDate.getMonth());
+              }}
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all flex items-center justify-center cursor-pointer ${
+                showCalendarMenu || dateStart || dateEnd
+                  ? 'bg-primary text-on-primary border-primary shadow-sm'
+                  : 'bg-surface-container-lowest text-primary border-outline-variant hover:bg-surface-container/50'
+              }`}
+              title="Date Range Selector"
+            >
+              <Calendar className="w-4 h-4" />
+            </button>
+            {showCalendarMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowCalendarMenu(false)} />
+                <div className="absolute right-0 mt-2 p-4 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg z-20 animate-fadeIn w-72 text-left flex flex-col gap-3">
+                  <div className="text-center bg-surface-container-low p-2 rounded-xl border border-outline-variant/40">
+                    <p className="text-[10px] font-bold text-secondary">
+                      {!tempStart && 'Select start date'}
+                      {tempStart && !tempEnd && `Select end date (Start: ${formatDate(tempStart)})`}
+                      {tempStart && tempEnd && `Range: ${formatDate(tempStart)} to ${formatDate(tempEnd)}`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-1">
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="p-1 hover:bg-surface-container rounded-lg text-secondary transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs font-bold text-on-surface">
+                      {MONTH_NAMES[viewMonth]} {viewYear}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-1 hover:bg-surface-container rounded-lg text-secondary transition-colors cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1 text-center" onMouseLeave={() => setHoveredDate(null)}>
+                    {WEEKDAY_NAMES.map((d) => (
+                      <div key={d} className="text-[10px] font-bold text-secondary/60 py-1 uppercase tracking-wider">
+                        {d}
+                      </div>
+                    ))}
+                    {generateDays().map(({ day, isCurrentMonth, month, year }, idx) => {
+                      const dateStr = formatDateString(year, month, day);
+                      const isStart = dateStr === tempStart;
+                      const isEnd = dateStr === tempEnd;
+                      const inRange = isDateInRange(dateStr);
+                      const isSelected = isStart || isEnd;
+
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onMouseEnter={() => tempStart && !tempEnd && setHoveredDate(dateStr)}
+                          onClick={() => handleDateClick(year, month, day)}
+                          className={`h-7 w-7 text-[10px] font-semibold rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                            !isCurrentMonth 
+                              ? 'text-secondary/20 hover:bg-surface-container/50' 
+                              : isSelected
+                                ? 'bg-primary text-on-primary font-bold shadow-sm'
+                                : inRange
+                                  ? 'bg-primary/15 text-primary rounded-none first:rounded-l-full last:rounded-r-full'
+                                  : 'text-on-surface hover:bg-surface-container'
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex gap-2 justify-between pt-2 border-t border-outline-variant/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateStart('');
+                        setDateEnd('');
+                        setTempStart(null);
+                        setTempEnd(null);
+                        setShowCalendarMenu(false);
+                      }}
+                      className="px-2.5 py-1.5 text-xs font-semibold text-secondary hover:text-cashout hover:bg-cashout-bg/20 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Clear Range
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendarMenu(false)}
+                      className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-primary text-on-primary hover:bg-primary-dark transition-colors cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Filter dropdown (All Entry Types & All Categories) */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowFilterMenu(!showFilterMenu);
+                setShowCalendarMenu(false);
+              }}
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all flex items-center justify-center cursor-pointer ${
+                showFilterMenu || typeFilter !== 'all' || categoryFilter !== 'all'
+                  ? 'bg-primary text-on-primary border-primary shadow-sm'
+                  : 'bg-surface-container-lowest text-primary border-outline-variant hover:bg-surface-container/50'
+              }`}
+              title="Filters"
+            >
+              <Filter className="w-4 h-4" />
+            </button>
+            {showFilterMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowFilterMenu(false)} />
+                <div className="absolute right-0 mt-2 p-4 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg z-20 animate-fadeIn w-56 text-left">
+                  <h4 className="font-bold text-xs text-on-surface mb-2.5 uppercase tracking-wider">Filter Ledger</h4>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-secondary">Entry Type</label>
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value as any)}
+                        className="w-full px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs text-on-surface bg-surface-container-low focus:outline-none cursor-pointer"
+                      >
+                        <option value="all">All Entry Types</option>
+                        <option value="cash_in">Cash In Only (+)</option>
+                        <option value="cash_out">Cash Out Only (-)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold text-secondary">Category</label>
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="w-full px-2.5 py-1.5 border border-outline-variant rounded-lg text-xs text-on-surface bg-surface-container-low focus:outline-none cursor-pointer"
+                      >
+                        <option value="all">All Categories</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTypeFilter('all');
+                        setCategoryFilter('all');
+                        setShowFilterMenu(false);
+                      }}
+                      className="w-full py-1.5 mt-1 bg-surface border border-outline-variant text-secondary rounded-lg text-xs font-bold hover:bg-surface-container transition-colors cursor-pointer text-center"
+                    >
+                      Reset Filters
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -448,8 +733,18 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
                       {userRole !== 'viewer' ? (
                         <div className="flex items-center justify-end gap-1">
                           <button
+                            onClick={() => {
+                              setSelectedTxForEdit(tx);
+                              setIsAddModalOpen(true);
+                            }}
+                            className="p-1.5 text-secondary hover:text-primary hover:bg-surface-container rounded-lg transition-colors cursor-pointer"
+                            title="Edit transaction"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleDelete(tx.id, tx.description)}
-                            className="p-1.5 text-secondary hover:text-cashout hover:bg-cashout-bg rounded-lg transition-colors"
+                            className="p-1.5 text-secondary hover:text-cashout hover:bg-cashout-bg rounded-lg transition-colors cursor-pointer"
                             title="Delete transaction"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -471,6 +766,15 @@ export function TransactionsPage({ onOpenAddModal }: TransactionsPageProps) {
           </div>
         )}
       </div>
+
+      <AddTransactionModal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setSelectedTxForEdit(null);
+        }}
+        transactionToEdit={selectedTxForEdit}
+      />
     </div>
   );
 }

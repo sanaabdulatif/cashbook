@@ -1,6 +1,14 @@
 import { useStore } from '../../shared/lib/useStore';
-import { useActiveBook, useCashBooks, useActiveCashBook, useCategories, useTransactions } from '../../shared/lib/hooks/useQueries';
+import { 
+  useActiveBook, 
+  useCashBooks, 
+  useActiveCashBook, 
+  useCategories, 
+  useTransactions,
+  useBookMembers
+} from '../../shared/lib/hooks/useQueries';
 import { formatCurrency, formatDate } from '../../shared/utils';
+import { useAuth } from '../../shared/lib/AuthContext';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -29,8 +37,19 @@ export function DashboardPage() {
   const activeCashBook = useActiveCashBook(activeBookId || undefined);
   const { data: categories = [] } = useCategories(activeBookId || undefined);
   const { data: transactions = [] } = useTransactions(activeBookId || undefined);
+  const { data: members = [] } = useBookMembers(activeBookId || undefined);
+  const { user } = useAuth();
 
-  const currentCashBooks = cashBooks.filter(cb => cb.business_id === activeBook?.id);
+  // Get only CashBooks belonging to the active business
+  let currentCashBooks = cashBooks.filter(cb => cb.business_id === activeBook?.id);
+
+  // Filter based on user membership restriction
+  const currentMember = members.find((m) => m.user_id === user?.id);
+  const isBusinessOwner = activeBook && user && activeBook.user_id === user.id;
+
+  if (!isBusinessOwner && currentMember && currentMember.access_for && currentMember.access_for !== 'All CashBooks') {
+    currentCashBooks = currentCashBooks.filter(cb => cb.name === currentMember.access_for);
+  }
 
   // If no cashbooks exist under this business
   if (currentCashBooks.length === 0) {
@@ -120,19 +139,21 @@ export function DashboardPage() {
       </div>
 
       {/* PRD Rule 5.5 Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-1.5 md:gap-4">
         {/* Net Current Balance Card */}
-        <div className="bg-surface-container-lowest border border-outline-variant p-5 rounded-2xl shadow-ambient relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-secondary uppercase tracking-wider">Current Balance</span>
-            <div className="w-8 h-8 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
+        <div className="bg-surface-container-lowest border border-outline-variant p-2 md:p-5 rounded-xl md:rounded-2xl shadow-ambient relative overflow-hidden flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between mb-1 md:mb-3">
+            <span className="text-[9px] sm:text-[10px] md:text-xs font-bold text-secondary uppercase tracking-wider truncate">
+              <span className="hidden md:inline">Current </span>Balance
+            </span>
+            <div className="hidden md:flex w-8 h-8 rounded-xl bg-primary-fixed items-center justify-center text-primary">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-bold font-currency text-on-surface">
+          <p className="text-xs sm:text-base md:text-2xl font-bold font-currency text-on-surface truncate">
             {formatCurrency(summary.currentBalance, activeBook?.currency)}
           </p>
-          <div className="mt-2 flex items-center gap-2 text-xs text-secondary font-medium">
+          <div className="mt-2 hidden md:flex items-center gap-2 text-xs text-secondary font-medium">
             <span>Opening Balance:</span>
             <span className="font-currency font-bold text-on-surface">
               {formatCurrency(summary.openingBalance, activeBook?.currency)}
@@ -141,49 +162,55 @@ export function DashboardPage() {
         </div>
 
         {/* Total Cash In Card */}
-        <div className="bg-surface-container-lowest border border-outline-variant p-5 rounded-2xl shadow-ambient">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-cashin uppercase tracking-wider">Total Cash In</span>
-            <div className="w-8 h-8 rounded-xl bg-cashin-bg flex items-center justify-center text-cashin">
+        <div className="bg-surface-container-lowest border border-outline-variant p-2 md:p-5 rounded-xl md:rounded-2xl shadow-ambient flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between mb-1 md:mb-3">
+            <span className="text-[9px] sm:text-[10px] md:text-xs font-bold text-cashin uppercase tracking-wider truncate">
+              <span className="hidden md:inline">Total </span>Cash In
+            </span>
+            <div className="hidden md:flex w-8 h-8 rounded-xl bg-cashin-bg items-center justify-center text-cashin">
               <ArrowUpRight className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-2xl font-bold font-currency text-cashin">
+          <p className="text-xs sm:text-base md:text-2xl font-bold font-currency text-cashin truncate">
             {formatCurrency(summary.totalCashIn, activeBook?.currency)}
           </p>
-          <p className="mt-2 text-xs text-secondary font-medium">
+          <p className="mt-2 hidden md:block text-xs text-secondary font-medium">
             {transactions.filter(t => t.type === 'cash_in').length} entries recorded
           </p>
         </div>
 
         {/* Total Cash Out Card */}
-        <div className="bg-surface-container-lowest border border-outline-variant p-5 rounded-2xl shadow-ambient">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-cashout uppercase tracking-wider">Total Cash Out</span>
-            <div className="w-8 h-8 rounded-xl bg-cashout-bg flex items-center justify-center text-cashout">
+        <div className="bg-surface-container-lowest border border-outline-variant p-2 md:p-5 rounded-xl md:rounded-2xl shadow-ambient flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between mb-1 md:mb-3">
+            <span className="text-[9px] sm:text-[10px] md:text-xs font-bold text-cashout uppercase tracking-wider truncate">
+              <span className="hidden md:inline">Total </span>Cash Out
+            </span>
+            <div className="hidden md:flex w-8 h-8 rounded-xl bg-cashout-bg items-center justify-center text-cashout">
               <ArrowDownRight className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-2xl font-bold font-currency text-cashout">
+          <p className="text-xs sm:text-base md:text-2xl font-bold font-currency text-cashout truncate">
             {formatCurrency(summary.totalCashOut, activeBook?.currency)}
           </p>
-          <p className="mt-2 text-xs text-secondary font-medium">
+          <p className="mt-2 hidden md:block text-xs text-secondary font-medium">
             {transactions.filter(t => t.type === 'cash_out').length} entries recorded
           </p>
         </div>
 
         {/* Net Flow Ratio Card */}
-        <div className="bg-surface-container-lowest border border-outline-variant p-5 rounded-2xl shadow-ambient">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-secondary uppercase tracking-wider">Net Cashflow</span>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-[#0EA5E9]/10 text-[#0EA5E9]">
+        <div className="bg-surface-container-lowest border border-outline-variant p-2 md:p-5 rounded-xl md:rounded-2xl shadow-ambient flex flex-col justify-between min-w-0">
+          <div className="flex items-center justify-between mb-1 md:mb-3">
+            <span className="text-[9px] sm:text-[10px] md:text-xs font-bold text-secondary uppercase tracking-wider truncate">
+              <span className="hidden md:inline">Net </span>Cashflow
+            </span>
+            <div className="hidden md:flex w-8 h-8 rounded-xl items-center justify-center bg-[#0EA5E9]/10 text-[#0EA5E9]">
               {summary.totalCashIn >= summary.totalCashOut ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
             </div>
           </div>
-          <p className="text-2xl font-bold font-currency text-[#0EA5E9]">
+          <p className="text-xs sm:text-base md:text-2xl font-bold font-currency text-[#0EA5E9] truncate">
             {formatCurrency(summary.totalCashIn - summary.totalCashOut, activeBook?.currency)}
           </p>
-          <p className="mt-2 text-xs text-secondary font-medium">
+          <p className="mt-2 hidden md:block text-xs text-secondary font-medium">
             Calculated dynamically
           </p>
         </div>

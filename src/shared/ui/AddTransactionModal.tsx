@@ -1,22 +1,25 @@
 import React, { useState } from 'react';
 import { useStore } from '../lib/useStore';
-import { useActiveBook, useActiveCashBook, useCategories, useAddTransaction, useUserRole } from '../lib/hooks/useQueries';
+import { useActiveBook, useActiveCashBook, useCategories, useAddTransaction, useUserRole, useUpdateTransaction } from '../lib/hooks/useQueries';
 import { X, Upload, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import type { Transaction } from '../types';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialType?: 'cash_in' | 'cash_out';
+  transactionToEdit?: Transaction | null;
 }
 
-export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }: AddTransactionModalProps) {
+export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in', transactionToEdit = null }: AddTransactionModalProps) {
   const { activeBookId } = useStore();
   const activeBook = useActiveBook();
   const activeCashBook = useActiveCashBook(activeBookId || undefined);
   const { data: categories = [] } = useCategories(activeBookId || undefined);
   const userRole = useUserRole(activeBookId || undefined);
   const addTransactionMutation = useAddTransaction(activeBookId || undefined);
+  const updateTransactionMutation = useUpdateTransaction(activeBookId || undefined);
   
   const [type, setType] = useState<'cash_in' | 'cash_out'>(initialType);
   const [amount, setAmount] = useState<string>('');
@@ -30,6 +33,35 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Sync state values on open/edit changes
+  React.useEffect(() => {
+    if (isOpen) {
+      if (transactionToEdit) {
+        setType(transactionToEdit.type);
+        setAmount(transactionToEdit.amount.toString());
+        setDescription(transactionToEdit.description);
+        setDate(transactionToEdit.date);
+        setCategoryId(transactionToEdit.category_id || '');
+        setPaymentMethod(transactionToEdit.payment_method || 'Bank');
+        setNote(transactionToEdit.note || '');
+        setAttachmentName(transactionToEdit.attachment_name || '');
+        setError('');
+        setSelectedFile(null);
+      } else {
+        setType(initialType);
+        setAmount('');
+        setDescription('');
+        setDate(new Date().toISOString().split('T')[0]);
+        setCategoryId('');
+        setPaymentMethod('Bank');
+        setNote('');
+        setAttachmentName('');
+        setError('');
+        setSelectedFile(null);
+      }
+    }
+  }, [isOpen, transactionToEdit, initialType]);
+
   if (!isOpen) return null;
 
   // Filter categories by type
@@ -42,7 +74,7 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
     setError('');
 
     if (userRole === 'viewer') {
-      setError('Permission Denied: Viewers cannot create transactions.');
+      setError('Permission Denied: Viewers cannot make updates.');
       return;
     }
 
@@ -84,30 +116,59 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
         uploadedUrl = publicUrl;
       }
 
-      addTransactionMutation.mutate({
-        book_id: activeCashBook.id,
-        type,
-        amount: numAmount,
-        description,
-        date,
-        category_id: categoryId || availableCategories[0]?.id,
-        payment_method: paymentMethod,
-        note,
-        attachment_name: attachmentName || undefined,
-        attachment_url: uploadedUrl,
-      }, {
-        onSuccess: () => {
-          setAmount('');
-          setDescription('');
-          setNote('');
-          setAttachmentName('');
-          setSelectedFile(null);
-          onClose();
-        },
-        onError: (err: any) => {
-          setError(err.message || 'Failed to add transaction.');
-        }
-      });
+      if (transactionToEdit) {
+        // Edit flow
+        updateTransactionMutation.mutate({
+          ...transactionToEdit,
+          type,
+          amount: numAmount,
+          description,
+          date,
+          category_id: categoryId || availableCategories[0]?.id,
+          payment_method: paymentMethod,
+          note,
+          attachment_name: attachmentName || undefined,
+          attachment_url: uploadedUrl || transactionToEdit.attachment_url,
+        }, {
+          onSuccess: () => {
+            setAmount('');
+            setDescription('');
+            setNote('');
+            setAttachmentName('');
+            setSelectedFile(null);
+            onClose();
+          },
+          onError: (err: any) => {
+            setError(err.message || 'Failed to update transaction.');
+          }
+        });
+      } else {
+        // Add flow
+        addTransactionMutation.mutate({
+          book_id: activeCashBook.id,
+          type,
+          amount: numAmount,
+          description,
+          date,
+          category_id: categoryId || availableCategories[0]?.id,
+          payment_method: paymentMethod,
+          note,
+          attachment_name: attachmentName || undefined,
+          attachment_url: uploadedUrl,
+        }, {
+          onSuccess: () => {
+            setAmount('');
+            setDescription('');
+            setNote('');
+            setAttachmentName('');
+            setSelectedFile(null);
+            onClose();
+          },
+          onError: (err: any) => {
+            setError(err.message || 'Failed to add transaction.');
+          }
+        });
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to upload receipt file.');
     } finally {
@@ -128,7 +189,9 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface">
-          <h2 className="font-bold text-lg text-on-surface">New Transaction Entry</h2>
+          <h2 className="font-bold text-lg text-on-surface">
+            {transactionToEdit ? 'Edit Transaction Entry' : 'New Transaction Entry'}
+          </h2>
           <button 
             onClick={onClose}
             className="text-secondary hover:text-on-surface p-1 rounded-lg hover:bg-surface-container transition-colors"
@@ -286,17 +349,21 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in' }
             <button
               type="button"
               onClick={onClose}
-              disabled={addTransactionMutation.isPending || uploading}
+              disabled={addTransactionMutation.isPending || updateTransactionMutation.isPending || uploading}
               className="px-4 py-2.5 rounded-xl border border-outline-variant text-secondary text-sm font-medium hover:bg-surface-container transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={addTransactionMutation.isPending || uploading}
+              disabled={addTransactionMutation.isPending || updateTransactionMutation.isPending || uploading}
               className="px-6 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-dark transition-all shadow-md disabled:opacity-75"
             >
-              {uploading ? 'Uploading Receipt...' : addTransactionMutation.isPending ? 'Saving...' : 'Save Transaction'}
+              {uploading 
+                ? 'Uploading Receipt...' 
+                : transactionToEdit 
+                  ? (updateTransactionMutation.isPending ? 'Updating...' : 'Update Transaction')
+                  : (addTransactionMutation.isPending ? 'Saving...' : 'Save Transaction')}
             </button>
           </div>
         </form>

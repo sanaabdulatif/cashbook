@@ -6,14 +6,15 @@ import {
   User, 
   CheckCircle2,
   Mail,
-  Shield,
   Building,
   Trash2,
-  ArrowRight
+  ArrowRight,
+  Pencil,
+  X
 } from 'lucide-react';
 
 export function SettingsPage() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { activeBookId } = useStore();
   
   const activeBook = useActiveBook();
@@ -28,6 +29,8 @@ export function SettingsPage() {
   // Profile Form States
   const [profileName, setProfileName] = useState(profile?.full_name || 'Demo User');
   const [profileEmail, setProfileEmail] = useState(profile?.email || 'demo@example.com');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
 
   // Add Member Form States
   const [newMemberEmail, setNewMemberEmail] = useState('');
@@ -41,6 +44,7 @@ export function SettingsPage() {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsEditing(false);
     setMessage('Profile settings saved successfully!');
     setTimeout(() => setMessage(''), 3000);
   };
@@ -60,6 +64,7 @@ export function SettingsPage() {
     }, {
       onSuccess: () => {
         setNewMemberEmail('');
+        setIsInviting(false);
         setMessage(`Successfully invited ${newMemberEmail} for ${newMemberAccess}`);
         setTimeout(() => setMessage(''), 3000);
       },
@@ -105,9 +110,9 @@ export function SettingsPage() {
       )}
 
       {/* Part 1: Our Profile */}
-      <div className="w-full bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-ambient flex flex-col gap-5">
+      <div className="w-full bg-surface-container-lowest border-x border-b border-t-4 border-t-primary border-primary/20 p-6 rounded-2xl shadow-ambient flex flex-col gap-5">
         <div>
-          <h3 className="font-bold text-base text-on-surface">Personal Profile Info</h3>
+          <h3 className="font-bold text-base text-primary">Personal Profile Info</h3>
           <p className="text-xs text-secondary mt-0.5">Your personal credentials and role assignments.</p>
         </div>
 
@@ -116,129 +121,172 @@ export function SettingsPage() {
             {/* Name input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-on-surface flex items-center gap-1.5" htmlFor="pName">
-                <User className="w-3.5 h-3.5 text-secondary" />
+                <User className="w-3.5 h-3.5 text-primary" />
                 <span>Full Name</span>
               </label>
-              <input
-                id="pName"
-                type="text"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                required
-                className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-surface-container-low"
-              />
+              <div className="relative w-full">
+                <input
+                  id="pName"
+                  type="text"
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  required
+                  readOnly={!isEditing}
+                  className={`w-full pl-3.5 pr-10 py-2.5 border rounded-xl text-sm font-medium focus:outline-none transition-all ${
+                    isEditing 
+                      ? 'border-primary focus:ring-2 focus:ring-primary/20 bg-surface-container-low text-on-surface' 
+                      : 'border-outline-variant/60 bg-surface-container/30 text-secondary cursor-not-allowed'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors cursor-pointer"
+                  title={isEditing ? 'Cancel Edit' : 'Edit Full Name'}
+                >
+                  {isEditing ? (
+                    <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">Cancel</span>
+                  ) : (
+                    <Pencil className="w-4 h-4 text-primary" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Email input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-on-surface flex items-center gap-1.5" htmlFor="pEmail">
-                <Mail className="w-3.5 h-3.5 text-secondary" />
+                <Mail className="w-3.5 h-3.5 text-primary" />
                 <span>Email Address</span>
               </label>
-              <input
-                id="pEmail"
-                type="email"
-                value={profileEmail}
-                onChange={(e) => setProfileEmail(e.target.value)}
-                required
-                className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-surface-container-low"
-              />
+              <div className="relative w-full">
+                <input
+                  id="pEmail"
+                  type="email"
+                  value={profileEmail}
+                  onChange={(e) => setProfileEmail(e.target.value)}
+                  required
+                  readOnly={!isEditing}
+                  className={`w-full pl-3.5 pr-10 py-2.5 border rounded-xl text-sm font-medium focus:outline-none transition-all ${
+                    isEditing 
+                      ? 'border-primary focus:ring-2 focus:ring-primary/20 bg-surface-container-low text-on-surface' 
+                      : 'border-outline-variant/60 bg-surface-container/30 text-secondary cursor-not-allowed'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors cursor-pointer"
+                  title={isEditing ? 'Cancel Edit' : 'Edit Email Address'}
+                >
+                  {isEditing ? (
+                    <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">Cancel</span>
+                  ) : (
+                    <Pencil className="w-4 h-4 text-primary" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Metadata Badges */}
-          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-outline-variant/60">
-            <div className="p-3 rounded-xl bg-surface border border-outline-variant/40 flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary" />
-              <div>
-                <span className="text-[10px] text-secondary font-medium block uppercase tracking-wider">Account Role</span>
-                <span className="text-xs font-bold text-on-surface capitalize">{userRole}</span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-surface border border-outline-variant/40 flex items-center gap-2">
-              <Building className="w-5 h-5 text-secondary" />
-              <div>
-                <span className="text-[10px] text-secondary font-medium block uppercase tracking-wider">Active Business</span>
-                <span className="text-xs font-bold text-on-surface truncate max-w-[120px] block">{activeBook?.name}</span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="mt-2 bg-primary text-on-primary font-bold py-2.5 rounded-xl hover:bg-primary-dark transition-all text-sm shadow-sm cursor-pointer"
-          >
-            Save Changes
-          </button>
+          {isEditing && (
+            <button
+              type="submit"
+              className="mt-2 bg-primary text-on-primary font-bold py-2.5 rounded-xl hover:bg-primary-dark transition-all text-sm shadow-sm cursor-pointer animate-fadeIn"
+            >
+              Save Changes
+            </button>
+          )}
         </form>
       </div>
 
-      <div className="border-t border-outline-variant/60 my-2"></div>
-
       {/* Part 2: Add Members */}
-      <div className="flex flex-col gap-6">
-        {/* Invite form */}
-        <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-ambient">
-          <div className="mb-4">
-            <h3 className="font-bold text-base text-on-surface">Invite Team Member</h3>
-            <p className="text-xs text-secondary mt-0.5">Grant access to specific CashBooks under this business profile.</p>
-          </div>
+      <div className="flex flex-col gap-6 -mt-4">
+        {/* Invite members burgundy button */}
+        {userRole === 'owner' && (
+          <button
+            type="button"
+            onClick={() => setIsInviting(true)}
+            className="w-full bg-primary text-on-primary py-3 px-6 rounded-2xl shadow-ambient hover:bg-primary-dark transition-all text-base font-bold cursor-pointer text-center border-none"
+          >
+            Invite Member
+          </button>
+        )}
 
-          <form onSubmit={handleInviteMember} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div>
-              <label className="block text-xs font-semibold text-secondary mb-1">Email Address *</label>
-              <input
-                type="email"
-                placeholder="colleague@example.com"
-                value={newMemberEmail}
-                onChange={(e) => setNewMemberEmail(e.target.value)}
-                disabled={userRole !== 'owner'}
-                required
-                className="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low disabled:opacity-50 h-[38px] md:h-[42px]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-secondary mb-1">Select Access Role *</label>
-              <select
-                value={newMemberRole}
-                onChange={(e) => setNewMemberRole(e.target.value as any)}
-                disabled={userRole !== 'owner'}
-                className="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low disabled:opacity-50 h-[38px] md:h-[42px]"
-              >
-                <option value="editor">Editor (Can add/edit)</option>
-                <option value="viewer">Viewer (Read-only)</option>
-                <option value="owner">Owner (Full access)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-secondary mb-1">Access For *</label>
-              <select
-                value={newMemberAccess}
-                onChange={(e) => setNewMemberAccess(e.target.value)}
-                disabled={userRole !== 'owner'}
-                className="w-full px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low disabled:opacity-50 h-[38px] md:h-[42px]"
-              >
-                <option value="All CashBooks">All CashBooks</option>
-                {currentCashBooks.map((cb) => (
-                  <option key={cb.id} value={cb.name}>{cb.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
+        {/* Invite Member Popup Modal */}
+        {isInviting && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop overlay */}
+            <div 
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-fadeIn"
+              onClick={() => setIsInviting(false)}
+            />
+            
+            {/* Modal Dialog Content */}
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-md shadow-2xl p-6 relative z-10 animate-scaleIn text-left">
               <button
-                type="submit"
-                disabled={userRole !== 'owner'}
-                className="w-full bg-primary text-on-primary font-bold py-2.5 rounded-xl hover:bg-primary-dark transition-all disabled:opacity-50 text-sm shadow-sm h-[38px] md:h-[42px] cursor-pointer"
+                type="button"
+                onClick={() => setIsInviting(false)}
+                className="absolute right-4 top-4 text-secondary hover:text-on-surface cursor-pointer p-1 rounded-lg hover:bg-surface-container transition-colors"
               >
-                Invite Member
+                <X className="w-5 h-5" />
               </button>
+
+              <div className="mb-5 pr-8">
+                <h3 className="font-bold text-lg text-primary">Invite Team Member</h3>
+                <p className="text-xs text-secondary mt-1">Grant access to specific CashBooks under this business profile.</p>
+              </div>
+
+              <form onSubmit={handleInviteMember} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-secondary">Email Address *</label>
+                  <input
+                    type="email"
+                    placeholder="colleague@example.com"
+                    value={newMemberEmail}
+                    onChange={(e) => setNewMemberEmail(e.target.value)}
+                    required
+                    className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-secondary">Select Access Role *</label>
+                  <select
+                    value={newMemberRole}
+                    onChange={(e) => setNewMemberRole(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low cursor-pointer"
+                  >
+                    <option value="editor">Editor (Can add/edit)</option>
+                    <option value="viewer">Viewer (Read-only)</option>
+                    <option value="owner">Owner (Full access)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-secondary">Access For *</label>
+                  <select
+                    value={newMemberAccess}
+                    onChange={(e) => setNewMemberAccess(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low cursor-pointer"
+                  >
+                    <option value="All CashBooks">All CashBooks</option>
+                    {currentCashBooks.map((cb) => (
+                      <option key={cb.id} value={cb.name}>{cb.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  className="mt-2 w-full bg-primary text-on-primary font-bold py-2.5 rounded-xl hover:bg-primary-dark transition-all text-sm shadow-sm cursor-pointer"
+                >
+                  Invite Member
+                </button>
+              </form>
             </div>
-          </form>
-        </div>
+          </div>
+        )}
 
         {/* Members Table */}
         <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-ambient overflow-hidden">
@@ -281,12 +329,13 @@ export function SettingsPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      {userRole === 'owner' && mem.role !== 'owner' ? (
+                      {userRole === 'owner' && mem.user_id !== user?.id ? (
                         <select
                           value={mem.role}
                           onChange={(e) => updateMemberRoleMutation.mutate({ memberId: mem.id, role: e.target.value as any })}
                           className="px-2 py-1 border border-outline-variant rounded-lg text-xs font-semibold bg-surface cursor-pointer"
                         >
+                          <option value="owner">Owner</option>
                           <option value="editor">Editor</option>
                           <option value="viewer">Viewer</option>
                         </select>
@@ -295,7 +344,7 @@ export function SettingsPage() {
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      {userRole === 'owner' && mem.role !== 'owner' ? (
+                      {userRole === 'owner' && mem.user_id !== user?.id ? (
                         <button
                           onClick={() => handleDeleteMember(mem.id, mem.profile?.email || mem.user_id)}
                           className="p-1.5 text-secondary hover:text-cashout hover:bg-cashout-bg rounded-lg transition-colors cursor-pointer"

@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/lib/AuthContext';
 import { supabase } from '../../shared/lib/supabase';
-import { Wallet, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address'),

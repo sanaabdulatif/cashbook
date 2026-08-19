@@ -272,7 +272,7 @@ export function TransactionsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-on-surface tracking-tight">Business CashBooks</h1>
+            <h1 className="text-2xl font-bold text-on-surface tracking-tight">Business CashTracks</h1>
             <p className="text-sm text-secondary mt-0.5">
               Select a book under <span className="font-semibold text-primary">{activeBook?.name}</span> to view transactions.
             </p>
@@ -281,7 +281,7 @@ export function TransactionsPage() {
             <button
               onClick={() => setIsAddingBook(true)}
               className="fixed bottom-20 right-4 md:static w-14 h-14 md:w-auto md:h-auto rounded-full md:rounded-xl bg-primary text-on-primary font-bold hover:bg-primary-dark transition-all flex items-center justify-center gap-2 shadow-lg md:shadow-ambient text-sm cursor-pointer z-40"
-              title="Add CashBook"
+              title="Add CashTrack"
             >
               <Plus className="w-6 h-6 md:w-4 md:h-4" />
               <span className="hidden md:inline">Add Book</span>
@@ -359,7 +359,7 @@ export function TransactionsPage() {
         {isAddingBook && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/40 backdrop-blur-sm animate-fadeIn">
             <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-sm shadow-2xl p-6 flex flex-col gap-4">
-              <h3 className="font-bold text-lg text-on-surface">Create New CashBook</h3>
+              <h3 className="font-bold text-lg text-on-surface">Create New CashTrack</h3>
               <form onSubmit={handleCreateBook} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1 text-left">
                   <label className="text-xs font-semibold text-on-surface" htmlFor="bookName">

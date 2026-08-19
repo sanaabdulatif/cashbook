@@ -90,7 +90,7 @@ export function AddTransactionModal({ isOpen, onClose, initialType = 'cash_in', 
     }
 
     if (!activeCashBook) {
-      setError('No active CashBook selected.');
+      setError('No active CashTrack selected.');
       return;
     }
 

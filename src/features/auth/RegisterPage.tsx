@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/lib/AuthContext';
 import { supabase } from '../../shared/lib/supabase';
-import { Wallet, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),

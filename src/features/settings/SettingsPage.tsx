@@ -234,7 +234,7 @@ export function SettingsPage() {
 
               <div className="mb-5 pr-8">
                 <h3 className="font-bold text-lg text-primary">Invite Team Member</h3>
-                <p className="text-xs text-secondary mt-1">Grant access to specific CashBooks under this business profile.</p>
+                <p className="text-xs text-secondary mt-1">Grant access to specific CashTracks under this business profile.</p>
               </div>
 
               <form onSubmit={handleInviteMember} className="flex flex-col gap-4">
@@ -270,7 +270,7 @@ export function SettingsPage() {
                     onChange={(e) => setNewMemberAccess(e.target.value)}
                     className="w-full px-3.5 py-2.5 border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary bg-surface-container-low cursor-pointer"
                   >
-                    <option value="All CashBooks">All CashBooks</option>
+                    <option value="All CashBooks">All CashTracks</option>
                     {currentCashBooks.map((cb) => (
                       <option key={cb.id} value={cb.name}>{cb.name}</option>
                     ))}
@@ -325,7 +325,7 @@ export function SettingsPage() {
                       </span>
                       <ArrowRight className="w-3 h-3 text-secondary" />
                       <span className="bg-primary-fixed/30 border border-primary/10 px-2 py-0.5 rounded text-[11px] font-bold text-primary">
-                        {mem.access_for || 'All CashBooks'}
+                        {mem.access_for === 'All CashBooks' ? 'All CashTracks' : mem.access_for || 'All CashTracks'}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right">

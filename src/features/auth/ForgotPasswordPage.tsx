@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/lib/AuthContext';
-import { Wallet, ArrowLeft, Mail, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
 const forgotPasswordSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address'),

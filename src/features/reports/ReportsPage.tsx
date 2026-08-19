@@ -177,9 +177,9 @@ export function ReportsPage() {
         </div>
         <div className="py-16 text-center bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-ambient">
           <BookOpen className="w-12 h-12 text-secondary/40 mx-auto mb-3" />
-          <p className="text-base font-bold text-on-surface">No CashBooks found</p>
+          <p className="text-base font-bold text-on-surface">No CashTracks found</p>
           <p className="text-xs text-secondary mt-1 px-4">
-            Please navigate to the <span className="font-bold text-primary">CashBook</span> tab and create a sub-ledger to export reports.
+            Please navigate to the <span className="font-bold text-primary">CashTrack</span> tab and create a sub-ledger to export reports.
           </p>
         </div>
       </div>
@@ -224,8 +224,8 @@ export function ReportsPage() {
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions Report');
-    XLSX.writeFile(workbook, `${activeBook?.name || 'CashBook'}_${selectedBook?.name}_Report.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');    // Save Excel file
+    XLSX.writeFile(workbook, `${activeBook?.name || 'CashTrack'}_${selectedBook?.name}_Report.xlsx`);
   };
 
   // Export to PDF
@@ -250,8 +250,8 @@ export function ReportsPage() {
     doc.setFont('helvetica', 'normal');
     doc.text(`${activeBook?.name || 'N/A'}`, 48, 42);
 
-    doc.setFont('helvetica', 'bold');
-    doc.text("CashBook Ledger:", 14, 48);
+    doc.setFont("Helvetica", "bold");
+    doc.text("CashTrack Ledger:", 14, 48);
     doc.setFont('helvetica', 'normal');
     doc.text(`${selectedBook?.name || 'N/A'}`, 48, 48);
 
@@ -399,7 +399,8 @@ export function ReportsPage() {
       y += 8;
     });
 
-    doc.save(`${activeBook?.name || 'CashBook'}_${selectedBook?.name}_Report.pdf`);
+    // Save PDF
+    doc.save(`${activeBook?.name || 'CashTrack'}_${selectedBook?.name}_Report.pdf`);
   };
 
   return (
@@ -424,8 +425,8 @@ export function ReportsPage() {
           <div className="flex items-end gap-3 w-full">
             {/* Select CashBook */}
             <div className="flex-1 min-w-0">
-              <label className="block text-xs font-semibold text-secondary mb-1.5 truncate">
-                Select CashBook *
+              <label className="text-xs font-semibold text-on-surface block mb-1">
+                Select CashTrack *
               </label>
               <select
                 value={selectedBook?.id || ''}

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../shared/lib/supabase';
-import { Wallet, CheckCircle2, Loader2, Lock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Loader2, Lock, ArrowRight } from 'lucide-react';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),

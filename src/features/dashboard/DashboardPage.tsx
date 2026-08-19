@@ -65,9 +65,9 @@ export function DashboardPage() {
         </div>
         <div className="py-16 text-center bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-ambient">
           <BookOpen className="w-12 h-12 text-secondary/40 mx-auto mb-3" />
-          <p className="text-base font-bold text-on-surface">No CashBooks found</p>
+          <p className="text-base font-bold text-on-surface">No CashTracks found</p>
           <p className="text-xs text-secondary mt-1 px-4">
-            Please navigate to the <span className="font-bold text-primary">CashBook</span> tab and create a sub-ledger to view metrics.
+            Please navigate to the <span className="font-bold text-primary">CashTrack</span> tab and create a sub-ledger to view metrics.
           </p>
         </div>
       </div>

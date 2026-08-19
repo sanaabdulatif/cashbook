@@ -145,9 +145,6 @@ export function TransactionsPage() {
         setTempEnd(null);
       } else {
         setTempEnd(dateStr);
-        setDateStart(tempStart);
-        setDateEnd(dateStr);
-        setShowCalendarMenu(false);
       }
     }
   };
@@ -589,10 +586,19 @@ export function TransactionsPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowCalendarMenu(false)}
+                      onClick={() => {
+                        if (tempStart && tempEnd) {
+                          setDateStart(tempStart);
+                          setDateEnd(tempEnd);
+                        } else if (tempStart) {
+                          setDateStart(tempStart);
+                          setDateEnd(tempStart);
+                        }
+                        setShowCalendarMenu(false);
+                      }}
                       className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-primary text-on-primary hover:bg-primary-dark transition-colors cursor-pointer"
                     >
-                      Close
+                      Done
                     </button>
                   </div>
                 </div>

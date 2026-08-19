@@ -61,7 +61,7 @@ export function Sidebar() {
 
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/transactions', label: 'CashBook', icon: Wallet },
+    { to: '/transactions', label: 'CashTrack', icon: Wallet },
     { to: '/reports', label: 'Reports', icon: BarChart3 },
     { to: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
@@ -70,12 +70,10 @@ export function Sidebar() {
     <aside className="hidden md:flex fixed left-0 top-0 h-full w-[240px] bg-surface dark:bg-surface-container-low border-r border-outline-variant dark:border-outline flex-col py-6 px-4 z-40">
       {/* Brand Header & Book Switcher */}
       <div className="mb-6 px-2">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary font-bold shadow-ambient">
-            <Wallet className="w-5 h-5" />
-          </div>
+        <div className="flex items-center gap-2.5 mb-4">
+          <img src="/logo.png" alt="CashTrack Logo" className="w-9 h-9 object-contain rounded-xl shadow-ambient" />
           <div>
-            <h1 className="font-bold text-lg text-primary leading-tight tracking-tight">CashBook</h1>
+            <h1 className="font-bold text-lg text-primary leading-tight tracking-tight">CashTrack</h1>
           </div>
         </div>
 
@@ -265,11 +263,9 @@ export function Navbar() {
           onClick={() => setShowDropdown(!showDropdown)}
           className="flex items-center gap-2 cursor-pointer text-left"
         >
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold">
-            <Wallet className="w-4 h-4" />
-          </div>
+          <img src="/logo.png" alt="CashTrack Logo" className="w-8 h-8 object-contain rounded-lg shadow-ambient" />
           <div>
-            <span className="font-bold text-xs text-primary block leading-tight">CashBook</span>
+            <span className="font-bold text-xs text-primary block leading-tight">CashTrack</span>
             <span className="text-[11px] text-on-surface font-semibold flex items-center gap-0.5">
               <span>{activeBook?.name || 'Select Business'}</span>
               <ChevronDown className="w-3 h-3 text-secondary" />
@@ -369,7 +365,7 @@ export function Navbar() {
 export function BottomNavigation() {
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/transactions', label: 'CashBook', icon: Wallet },
+    { to: '/transactions', label: 'CashTrack', icon: Wallet },
     { to: '/reports', label: 'Reports', icon: BarChart3 },
     { to: '/settings', label: 'Settings', icon: SettingsIcon },
   ];

@@ -60,14 +60,15 @@ export function LoginPage() {
       <main className="w-full max-w-md bg-surface-container-lowest rounded-xl border border-outline-variant shadow-ambient p-8 flex flex-col gap-6">
         
         {/* Header */}
-        <header className="flex flex-col items-center text-center gap-1">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-on-primary font-bold shadow-ambient mb-2">
-            <Wallet className="w-7 h-7" />
+        <header className="flex flex-col items-center text-center gap-1.5">
+          <div className="flex items-center gap-2.5 mb-2">
+            <img src="/logo.png" alt="CashTrack Logo" className="w-10 h-10 object-contain rounded-xl shadow-ambient" />
+            <h1 className="font-bold text-2xl text-primary tracking-tight">CashTrack</h1>
           </div>
-          <h1 className="font-bold text-2xl text-on-surface">
+          <h2 className="font-bold text-lg text-on-surface leading-tight">
             Welcome back
-          </h1>
-          <p className="text-sm text-secondary">
+          </h2>
+          <p className="text-xs text-secondary">
             Log in to manage your finances securely.
           </p>
         </header>

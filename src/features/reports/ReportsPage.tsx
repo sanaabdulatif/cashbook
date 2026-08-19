@@ -111,9 +111,6 @@ export function ReportsPage() {
         setTempEnd(null);
       } else {
         setTempEnd(dateStr);
-        setStartDate(tempStart);
-        setEndDate(dateStr);
-        setShowDatePicker(false);
       }
     }
   };
@@ -705,10 +702,19 @@ export function ReportsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowDatePicker(false)}
+                onClick={() => {
+                  if (tempStart && tempEnd) {
+                    setStartDate(tempStart);
+                    setEndDate(tempEnd);
+                  } else if (tempStart) {
+                    setStartDate(tempStart);
+                    setEndDate(tempStart);
+                  }
+                  setShowDatePicker(false);
+                }}
                 className="px-4 py-2 text-xs font-bold rounded-lg bg-primary text-on-primary hover:bg-primary-dark transition-colors cursor-pointer"
               >
-                Close
+                Done
               </button>
             </div>
           </div>

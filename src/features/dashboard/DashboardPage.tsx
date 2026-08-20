@@ -1,3 +1,4 @@
+import React from 'react';
 import { useStore } from '../../shared/lib/useStore';
 import { 
   useActiveBook, 
@@ -5,10 +6,12 @@ import {
   useActiveCashBook, 
   useCategories, 
   useTransactions,
-  useBookMembers
+  useBookMembers,
+  useBooks
 } from '../../shared/lib/hooks/useQueries';
 import { formatCurrency, formatDate } from '../../shared/utils';
 import { useAuth } from '../../shared/lib/AuthContext';
+import { AddBusinessModal } from '../../shared/ui/AddBusinessModal';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -31,14 +34,17 @@ import {
 } from 'recharts';
 
 export function DashboardPage() {
-  const { activeBookId, setActiveCashBookId } = useStore();
+  const { activeBookId, setActiveBookId, setActiveCashBookId } = useStore();
   const activeBook = useActiveBook();
+  const { data: books = [] } = useBooks();
   const { data: cashBooks = [] } = useCashBooks(activeBookId || undefined);
   const activeCashBook = useActiveCashBook(activeBookId || undefined);
   const { data: categories = [] } = useCategories(activeBookId || undefined);
   const { data: transactions = [] } = useTransactions(activeBookId || undefined);
   const { data: members = [] } = useBookMembers(activeBookId || undefined);
   const { user } = useAuth();
+
+  const [isAddingBusiness, setIsAddingBusiness] = React.useState(false);
 
   // Get only CashBooks belonging to the active business
   let currentCashBooks = cashBooks.filter(cb => cb.business_id === activeBook?.id);
@@ -62,6 +68,29 @@ export function DashboardPage() {
               Real-time financial overview for <span className="font-semibold text-primary">{activeBook?.name}</span>
             </p>
           </div>
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            {/* Business Select Dropdown */}
+            <select
+              value={activeBookId || ''}
+              onChange={(e) => {
+                if (e.target.value === 'ADD_NEW') {
+                  setIsAddingBusiness(true);
+                } else {
+                  setActiveBookId(e.target.value);
+                }
+              }}
+              className="flex-1 md:flex-none px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-semibold text-on-surface bg-surface-container-lowest focus:outline-none focus:border-primary cursor-pointer shadow-sm"
+            >
+              {books.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+              <option value="ADD_NEW" className="text-primary font-bold">
+                + Add Business
+              </option>
+            </select>
+          </div>
         </div>
         <div className="py-16 text-center bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-ambient">
           <BookOpen className="w-12 h-12 text-secondary/40 mx-auto mb-3" />
@@ -70,6 +99,10 @@ export function DashboardPage() {
             Please navigate to the <span className="font-bold text-primary">CashTrack</span> tab and create a sub-ledger to view metrics.
           </p>
         </div>
+        <AddBusinessModal 
+          isOpen={isAddingBusiness} 
+          onClose={() => setIsAddingBusiness(false)} 
+        />
       </div>
     );
   }
@@ -121,13 +154,36 @@ export function DashboardPage() {
             Real-time financial overview for <span className="font-semibold text-primary">{activeBook?.name} / {activeCashBook?.name || currentCashBooks[0]?.name}</span>
           </p>
         </div>
-        <div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* Business Select Dropdown */}
+          <select
+            value={activeBookId || ''}
+            onChange={(e) => {
+              if (e.target.value === 'ADD_NEW') {
+                setIsAddingBusiness(true);
+              } else {
+                setActiveBookId(e.target.value);
+              }
+            }}
+            className="flex-1 md:flex-none px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-semibold text-on-surface bg-surface-container-lowest focus:outline-none focus:border-primary cursor-pointer shadow-sm"
+          >
+            {books.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+            <option value="ADD_NEW" className="text-primary font-bold">
+              + Add Business
+            </option>
+          </select>
+
+          {/* Book Select Dropdown */}
           <select
             value={activeCashBook?.id || currentCashBooks[0]?.id || ''}
             onChange={(e) => {
               setActiveCashBookId(e.target.value);
             }}
-            className="px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-semibold text-on-surface bg-surface-container-lowest focus:outline-none focus:border-primary cursor-pointer shadow-sm"
+            className="flex-1 md:flex-none px-3.5 py-2 border border-outline-variant rounded-xl text-sm font-semibold text-on-surface bg-surface-container-lowest focus:outline-none focus:border-primary cursor-pointer shadow-sm"
           >
             {currentCashBooks.map((cb) => (
               <option key={cb.id} value={cb.id}>
@@ -325,6 +381,10 @@ export function DashboardPage() {
           </table>
         </div>
       </div>
+      <AddBusinessModal 
+        isOpen={isAddingBusiness} 
+        onClose={() => setIsAddingBusiness(false)} 
+      />
     </div>
   );
 }
